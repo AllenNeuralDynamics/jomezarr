@@ -1,0 +1,136 @@
+{
+  "multiscales": [
+    {
+      "axes": [
+        {
+          "name": "t",
+          "type": "time",
+          "unit": "millisecond"
+        },
+        {
+          "name": "c",
+          "type": "channel"
+        },
+        {
+          "name": "z",
+          "type": "space",
+          "unit": "micrometer"
+        },
+        {
+          "name": "y",
+          "type": "space",
+          "unit": "micrometer"
+        },
+        {
+          "name": "x",
+          "type": "space",
+          "unit": "micrometer"
+        }
+      ],
+      "datasets": [
+        {
+          "coordinateTransformations": [
+            {
+              "scale": [
+                1.0,
+                1.0,
+                1.8,
+                1.8,
+                2.0
+              ],
+              "type": "scale"
+            }
+          ],
+          "path": "0"
+        },
+        {
+          "coordinateTransformations": [
+            {
+              "scale": [
+                1.0,
+                1.0,
+                1.8,
+                3.6,
+                4.0
+              ],
+              "type": "scale"
+            }
+          ],
+          "path": "1"
+        },
+        {
+          "coordinateTransformations": [
+            {
+              "scale": [
+                1.0,
+                1.0,
+                1.8,
+                7.2,
+                8.0
+              ],
+              "type": "scale"
+            }
+          ],
+          "path": "2"
+        },
+        {
+          "coordinateTransformations": [
+            {
+              "scale": [
+                1.0,
+                1.0,
+                1.8,
+                14.4,
+                16.0
+              ],
+              "type": "scale"
+            }
+          ],
+          "path": "3"
+        }
+      ],
+      "name": "/sample.zarr",
+      "version": "0.4"
+    }
+  ],
+  "omero": {
+    "channels": [
+      {
+        "active": true,
+        "coefficient": 1,
+        "color": "000000",
+        "family": "linear",
+        "inverted": false,
+        "label": "Ex_488_Em_525",
+        "window": {
+          "end": 1.0,
+          "max": 1.0,
+          "min": 0.0,
+          "start": 0.0
+        }
+      },
+      {
+        "active": true,
+        "coefficient": 1,
+        "color": "000001",
+        "family": "linear",
+        "inverted": false,
+        "label": "Ex_561_Em_600",
+        "window": {
+          "end": 1.0,
+          "max": 1.0,
+          "min": 0.0,
+          "start": 0.0
+        }
+      }
+    ],
+    "id": 1,
+    "name": "sample.zarr",
+    "rdefs": {
+      "defaultT": 0,
+      "defaultZ": 2,
+      "model": "color"
+    },
+    "version": "0.4"
+  }
+}
