@@ -22,7 +22,7 @@ public class ImageTest extends ExternalDatasetBase {
 
         OmeZarrGroup fileset = OmeZarrGroup.open(path);
 
-        OmeZarrImage image = new OmeZarrImage(fileset.getAttributes().getMultiscales()[0].getDatasets()[0], 0, 0, 0);
+        OmeZarrImage image = new OmeZarrImage(fileset.getAttributes().getMultiscales()[0].getDatasets().get(0), 0, 0, 0);
 
         Raster raster = image.asRaster();
 

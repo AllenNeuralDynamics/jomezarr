@@ -22,7 +22,7 @@ public class ImageStackTest extends ExternalDatasetBase {
 
         OmeZarrGroup fileset = OmeZarrGroup.open(path);
 
-        OmeZarrImageStack image = new OmeZarrImageStack(fileset.getAttributes().getMultiscales()[0].getDatasets()[0]);
+        OmeZarrImageStack image = new OmeZarrImageStack(fileset.getAttributes().getMultiscales()[0].getDatasets().get(0));
 
         Raster[] slices = image.asSlices(0, 0, 2);
 

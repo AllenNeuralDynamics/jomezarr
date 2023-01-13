@@ -32,29 +32,79 @@ public class OmeZarrImageStack {
     }
 
     public Raster[] asSlices(int time, int channel) throws IOException, InvalidRangeException {
-        return asSlices(time, channel, Integer.MAX_VALUE, false);
+        return asSlices(time, channel, 0, Integer.MAX_VALUE, false);
     }
 
     public Raster[] asSlices(int time, int channel, boolean autoContrast) throws IOException, InvalidRangeException {
-        return asSlices(time, channel,  Integer.MAX_VALUE, autoContrast);
+        return asSlices(time, channel, 0, Integer.MAX_VALUE, autoContrast);
     }
 
     public Raster[] asSlices(int time, int channel, int limit) throws IOException, InvalidRangeException {
-        return asSlices(time, channel, limit, false);
+        return asSlices(time, channel, 0, limit, false);
     }
 
-    public Raster[] asSlices(int time, int channel, int limit, boolean autoContrast) throws IOException, InvalidRangeException {
+    public Raster[] asSlices(int time, int channel, int offset, int count, boolean autoContrast) throws IOException, InvalidRangeException {
         int[] shape = dataset.getShape();
 
-        if (shape[2] < limit) {
-            limit = shape[2];
+        if (offset > shape[2]) {
+            offset = shape[2] - 1;
         }
 
-        Raster[] rasterImages = new Raster[limit];
+        int last = offset + count;
+
+        if (shape[2] < last) {
+            last = shape[2];
+            count = last - offset;
+        }
+
+        Raster[] rasterImages = new Raster[count];
+
+        AutoContrastParameters parameters = null;
+
+        if (autoContrast) {
+            int idx = (int) (offset + count / 2.0);
+
+            OmeZarrImage image = new OmeZarrImage(dataset, time, channel, idx);
+
+            parameters = AutoContrastParameters.fromBuffer(image.toDataBuffer());
+        }
 
         for (int idx = 0; idx < rasterImages.length; idx++) {
-            OmeZarrImage image = new OmeZarrImage(dataset, time, channel, idx);
-            rasterImages[idx] = image.asRaster(autoContrast);
+            OmeZarrImage image = new OmeZarrImage(dataset, time, channel, offset + idx);
+            rasterImages[idx] = image.asRaster(autoContrast, parameters);
+        }
+        return rasterImages;
+    }
+
+    public Raster[] asSlices(int[] chunkShape, int[] chunkOffset, boolean autoContrast) throws IOException, InvalidRangeException {
+        int count = chunkShape[2];
+
+        Raster[] rasterImages = new Raster[count];
+
+        AutoContrastParameters parameters = null;
+
+        int[] currentOffset = new int[chunkOffset.length];
+
+        currentOffset[0] = chunkOffset[0];
+        currentOffset[1] = chunkOffset[1];
+        currentOffset[2] = chunkOffset[2];
+        currentOffset[3] = chunkOffset[3];
+        currentOffset[4] = chunkOffset[4];
+
+        if (autoContrast) {
+            int idx = (int) (count / 2.0);
+
+            currentOffset[2] = idx;
+
+            OmeZarrImage image = new OmeZarrImage(dataset, chunkShape, chunkOffset);
+
+            parameters = AutoContrastParameters.fromBuffer(image.toDataBuffer());
+        }
+
+        for (int idx = 0; idx < rasterImages.length; idx++) {
+            currentOffset[2] = idx;
+            OmeZarrImage image = new OmeZarrImage(dataset, chunkShape, currentOffset);
+            rasterImages[idx] = image.asRaster(autoContrast, parameters);
         }
         return rasterImages;
     }

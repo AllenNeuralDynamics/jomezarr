@@ -44,7 +44,7 @@ public class DatasetTest extends ExternalDatasetBase {
 
         OmeZarrGroup fileset = OmeZarrGroup.open(path);
 
-        short[] data = fileset.getAttributes().getMultiscales()[0].getDatasets()[0].readShort();
+        short[] data = fileset.getAttributes().getMultiscales()[0].getDatasets().get(0).readShort();
 
         Assert.assertNotNull(data);
 
@@ -61,7 +61,7 @@ public class DatasetTest extends ExternalDatasetBase {
 
         OmeZarrGroup fileset = OmeZarrGroup.open(path);
 
-        short[] data = fileset.getAttributes().getMultiscales()[0].getDatasets()[0].readShort(0, 0, 0);
+        short[] data = fileset.getAttributes().getMultiscales()[0].getDatasets().get(0).readShort(0, 0, 0);
 
         Assert.assertNotNull(data);
 
