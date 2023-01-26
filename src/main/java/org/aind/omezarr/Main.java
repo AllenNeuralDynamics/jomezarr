@@ -35,9 +35,9 @@ public class Main {
 
         //readImageExample();
 
-        writeExample();
+        // writeExample();
 
-        // convertExample();
+        convertExample();
     }
 
     private static void readExample() throws IOException, InvalidRangeException {
@@ -121,7 +121,7 @@ public class Main {
             ZarrArray reopenedArray = ZarrArray.open(String.format("E:\\aind\\samples\\2022-11-22-fused.ome.zarr\\%d", idx));
 
             int[] shape = reopenedArray.getShape();
-            int[] chunksize = reopenedArray.getChunks();
+            int[] chunksize = {1, 1, 251, 1536, 1024};
             int[] fromPosition = {0, 0, 0, 0, 0};
 
             short[] data = (short[]) reopenedArray.read(shape, fromPosition);

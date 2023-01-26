@@ -5,10 +5,7 @@ import ucar.ma2.InvalidRangeException;
 
 import java.awt.*;
 import java.awt.color.ColorSpace;
-import java.awt.image.ColorModel;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.Raster;
+import java.awt.image.*;
 import java.io.IOException;
 
 public class OmeZarrImageStack {
@@ -35,15 +32,15 @@ public class OmeZarrImageStack {
         return asSlices(time, channel, 0, Integer.MAX_VALUE, false);
     }
 
-    public Raster[] asSlices(int time, int channel, boolean autoContrast) throws IOException, InvalidRangeException {
+    public WritableRaster[] asSlices(int time, int channel, boolean autoContrast) throws IOException, InvalidRangeException {
         return asSlices(time, channel, 0, Integer.MAX_VALUE, autoContrast);
     }
 
-    public Raster[] asSlices(int time, int channel, int limit) throws IOException, InvalidRangeException {
+    public WritableRaster[] asSlices(int time, int channel, int limit) throws IOException, InvalidRangeException {
         return asSlices(time, channel, 0, limit, false);
     }
 
-    public Raster[] asSlices(int time, int channel, int offset, int count, boolean autoContrast) throws IOException, InvalidRangeException {
+    public WritableRaster[] asSlices(int time, int channel, int offset, int count, boolean autoContrast) throws IOException, InvalidRangeException {
         int[] shape = dataset.getShape();
 
         if (offset > shape[2]) {
@@ -57,7 +54,7 @@ public class OmeZarrImageStack {
             count = last - offset;
         }
 
-        Raster[] rasterImages = new Raster[count];
+        WritableRaster[] rasterImages = new WritableRaster[count];
 
         AutoContrastParameters parameters = null;
 
@@ -76,10 +73,10 @@ public class OmeZarrImageStack {
         return rasterImages;
     }
 
-    public Raster[] asSlices(int[] chunkShape, int[] chunkOffset, boolean autoContrast) throws IOException, InvalidRangeException {
+    public WritableRaster[] asSlices(int[] chunkShape, int[] chunkOffset, boolean autoContrast) throws IOException, InvalidRangeException {
         int count = chunkShape[2];
 
-        Raster[] rasterImages = new Raster[count];
+        WritableRaster[] rasterImages = new WritableRaster[count];
 
         AutoContrastParameters parameters = null;
 

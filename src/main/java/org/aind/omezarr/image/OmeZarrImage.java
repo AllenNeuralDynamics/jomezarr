@@ -86,15 +86,15 @@ public class OmeZarrImage {
         return dataBuffer;
     }
 
-    public Raster asRaster() throws IOException, InvalidRangeException {
+    public WritableRaster asRaster() throws IOException, InvalidRangeException {
         return asRaster(false);
     }
 
-    public Raster asRaster(boolean autoContrast) throws IOException, InvalidRangeException {
+    public WritableRaster asRaster(boolean autoContrast) throws IOException, InvalidRangeException {
         return asWritableRaster(autoContrast, null);
     }
 
-    public Raster asRaster(boolean autoContrast, AutoContrastParameters parameters) throws IOException, InvalidRangeException {
+    public WritableRaster asRaster(boolean autoContrast, AutoContrastParameters parameters) throws IOException, InvalidRangeException {
         return asWritableRaster(autoContrast, parameters);
     }
 
