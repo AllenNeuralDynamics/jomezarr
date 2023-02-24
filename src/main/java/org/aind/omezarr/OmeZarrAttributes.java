@@ -1,8 +1,11 @@
 package org.aind.omezarr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.aind.omezarr.util.InputStreamUtil;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,15 +46,21 @@ public class OmeZarrAttributes {
         this.fileset = fileset;
     }
 
+    public static OmeZarrAttributes fromInputStream(InputStream stream) throws IOException {
+        return mapObjectFromBytes(InputStreamUtil.readAllBytes(stream));
+    }
+
     public static OmeZarrAttributes fromJson(String path) throws IOException {
         return fromJson(Paths.get(path));
     }
 
     public static OmeZarrAttributes fromJson(Path path) throws IOException {
-        byte[] jsonData = Files.readAllBytes(path);
+        return mapObjectFromBytes(Files.readAllBytes(path));
+    }
 
+    private static OmeZarrAttributes mapObjectFromBytes(byte[] bytes) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        return objectMapper.readValue(jsonData, OmeZarrAttributes.class);
+        return objectMapper.readValue(bytes, OmeZarrAttributes.class);
     }
 }

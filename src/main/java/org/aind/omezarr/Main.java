@@ -31,13 +31,13 @@ public class Main {
 
         TCZYX_SAMPLE_FILESET = Paths.get(System.getProperty("TestSampleDir"), TCZYX_SAMPLE_NAME);
 
-        // readExample();
+        readExample();
 
         //readImageExample();
 
         // writeExample();
 
-        convertExample();
+        // convertExample();
     }
 
     private static void readExample() throws IOException, InvalidRangeException {

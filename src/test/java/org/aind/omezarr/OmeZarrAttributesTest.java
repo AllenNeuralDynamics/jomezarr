@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -20,5 +21,20 @@ public class OmeZarrAttributesTest {
         Assert.assertNotNull(attr);
 
         Assert.assertEquals(1, attr.getMultiscales().length);
+    }
+
+    @Test
+    public void TestStreamDeserialization() throws IOException, URISyntaxException {
+        URL resourceUrl = ClassLoader.getSystemResource("omezarrzattr.json");
+
+        InputStream input = resourceUrl.openStream();
+
+        OmeZarrAttributes attr = OmeZarrAttributes.fromInputStream(input);
+
+        Assert.assertNotNull(attr);
+
+        Assert.assertEquals(1, attr.getMultiscales().length);
+
+        input.close();
     }
 }
