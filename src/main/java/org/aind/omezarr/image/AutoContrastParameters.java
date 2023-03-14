@@ -33,4 +33,14 @@ public class AutoContrastParameters {
         this.min = min;
         this.slope = slope;
     }
+
+    public void update(double min, double max) {
+        this.min = min;
+
+        this.slope = 65535.0 / (max - min);
+    }
+
+    public double getMax() {
+        return min + (65535.0 / slope);
+    }
 }

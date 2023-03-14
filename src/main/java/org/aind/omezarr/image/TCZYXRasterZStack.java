@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class TCZYXRasterZStack {
-    public static AutoContrastParameters computeAutoContrast(OmeZarrDataset dataset, int[] shape) {
+    public static AutoContrastParameters computeAutoContrast(OmeZarrDataset dataset, int[] shape) throws IOException, InvalidRangeException {
         if (dataset == null || !dataset.isValid()) {
             throw new IllegalArgumentException("dataset");
         }
@@ -21,34 +21,29 @@ public class TCZYXRasterZStack {
             throw new IllegalArgumentException("shape");
         }
 
-        try {
-            int[] fullSize = dataset.getShape();
+        int[] fullSize = dataset.getShape();
 
-            int[] actualShape = new int[fullSize.length];
-            int[] actualOffset = new int[fullSize.length];
+        int[] actualShape = new int[fullSize.length];
+        int[] actualOffset = new int[fullSize.length];
 
-            for (int idx = 0; idx < shape.length; idx++) {
-                int mid = (int) (fullSize[idx] / 2.0);
-                int half = (int) (shape[idx] / 2.0);
-                actualOffset[idx] = Math.max(0, Math.min(shape[idx] - 1, mid - half));
-                actualShape[idx] = Math.min(fullSize[idx] - 1, shape[idx]);
-            }
-
-            short[] data = dataset.readShort(actualShape, actualOffset);
-
-            DataBuffer buffer;
-
-            if (!dataset.getIsUnsigned()) {
-                buffer = fromSignedShort(data, data.length, 0);
-            } else {
-                buffer = new DataBufferUShort(data, data.length, 0);
-            }
-
-            return AutoContrastParameters.fromBuffer(buffer);
-        } catch (Exception ex) {
-            // TODO Don't absorb exception
-            return null;
+        for (int idx = 0; idx < shape.length; idx++) {
+            int mid = (int) (fullSize[idx] / 2.0);
+            int half = (int) (shape[idx] / 2.0);
+            actualOffset[idx] = Math.max(0, Math.min(shape[idx] - 1, mid - half));
+            actualShape[idx] = Math.max(1, Math.min(fullSize[idx] - 1, shape[idx]));
         }
+
+        short[] data = dataset.readShort(actualShape, actualOffset);
+
+        DataBuffer buffer;
+
+        if (!dataset.getIsUnsigned()) {
+            buffer = fromSignedShort(data, data.length, 0);
+        } else {
+            buffer = new DataBufferUShort(data, data.length, 0);
+        }
+
+        return AutoContrastParameters.fromBuffer(buffer);
     }
 
     public static WritableRaster[] fromDataset(OmeZarrDataset dataset, int[] shape, int[] offset, AutoContrastParameters parameters) {
