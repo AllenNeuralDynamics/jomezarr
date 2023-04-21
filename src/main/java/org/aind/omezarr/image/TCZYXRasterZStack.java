@@ -1,6 +1,7 @@
 package org.aind.omezarr.image;
 
 import org.aind.omezarr.OmeZarrDataset;
+import org.aind.omezarr.util.PerformanceMetrics;
 import ucar.ma2.InvalidRangeException;
 
 import java.awt.*;
@@ -9,6 +10,8 @@ import java.awt.image.DataBufferUShort;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 
 public class TCZYXRasterZStack {
@@ -47,10 +50,10 @@ public class TCZYXRasterZStack {
     }
 
     public static WritableRaster[] fromDataset(OmeZarrDataset dataset, int[] shape, int[] offset, AutoContrastParameters parameters) {
-        return fromDataset(dataset, shape, offset, parameters != null, parameters, false);
+        return fromDataset(dataset, shape, offset, 1, parameters != null, parameters, null);
     }
 
-    public static WritableRaster[] fromDataset(OmeZarrDataset dataset, int[] shape, int[] offset, boolean autoContrast, AutoContrastParameters parameters, boolean useSlowMethod) {
+    public static WritableRaster[] fromDataset(OmeZarrDataset dataset, int[] shape, int[] offset, int numTasks, boolean autoContrast, AutoContrastParameters parameters, PerformanceMetrics metrics) {
         if (dataset == null || !dataset.isValid()) {
             throw new IllegalArgumentException("dataset");
         }
@@ -66,19 +69,21 @@ public class TCZYXRasterZStack {
         try {
             ArrayList<DataBufferUShort> dataBuffers;
 
-            if (useSlowMethod) {
-                dataBuffers = createDataBuffersSlow(dataset, shape, offset);
-            } else {
-                dataBuffers = createDataBuffers(dataset, shape, offset);
-            }
+            dataBuffers = createDataBuffers(dataset, shape, offset, numTasks, metrics);
 
             if (autoContrast && parameters == null) {
                 int idx = (int) (dataBuffers.size() / 2.0);
 
+                Instant start = Instant.now();
+
                 parameters = AutoContrastParameters.fromBuffer(dataBuffers.get(idx));
+
+                if (metrics != null) {
+                    metrics.autoConstrastDuration = Duration.between(start, Instant.now());
+                }
             }
 
-            return dataBufferToRaster(dataBuffers, shape[4], shape[3], parameters);
+            return dataBufferToRaster(dataBuffers, shape[4], shape[3], parameters, metrics);
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
@@ -86,10 +91,18 @@ public class TCZYXRasterZStack {
         return null;
     }
 
-    private static ArrayList<DataBufferUShort> createDataBuffers(OmeZarrDataset dataset, int[] shape, int[] offset) throws InvalidRangeException, IOException {
+    private static ArrayList<DataBufferUShort> createDataBuffers(OmeZarrDataset dataset, int[] shape, int[] offset, int numTasks, PerformanceMetrics metrics) throws InvalidRangeException, IOException {
         int count = shape[2];
 
-        short[] data = dataset.readShort(shape, offset);
+        Instant start = Instant.now();
+
+        short[] data = numTasks > 1 ? dataset.readShortAsParallel(shape, offset, numTasks) : dataset.readShort(shape, offset);
+
+        if (metrics != null) {
+            metrics.readDuration = Duration.between(start, Instant.now());
+        }
+
+        start = Instant.now();
 
         int zPlaneLength = shape[3] * shape[4];
 
@@ -107,47 +120,43 @@ public class TCZYXRasterZStack {
             }
         }
 
-        return dataBuffers;
-    }
-
-    private static ArrayList<DataBufferUShort> createDataBuffersSlow(OmeZarrDataset dataset, int[] shape, int[] offset) throws InvalidRangeException, IOException {
-        int count = shape[2];
-
-        shape[2] = 1;
-
-        ArrayList<DataBufferUShort> dataBuffers = new ArrayList<>();
-
-        for (int zIdx = 0; zIdx < count; zIdx++) {
-            short[] data = dataset.readShort(shape, offset);
-
-            if (!dataset.getIsUnsigned()) {
-                dataBuffers.add(fromSignedShort(data, data.length, 0));
-            } else {
-                dataBuffers.add(new DataBufferUShort(data, data.length, 0));
-            }
-
-            offset[2] += 1;
+        if (metrics != null) {
+            metrics.dataBufferDuration = Duration.between(start, Instant.now());
         }
 
         return dataBuffers;
     }
 
-    private static WritableRaster[] dataBufferToRaster(ArrayList<DataBufferUShort> dataBuffers, int width, int height, AutoContrastParameters parameters) {
+    private static WritableRaster[] dataBufferToRaster(ArrayList<DataBufferUShort> dataBuffers, int width, int height, AutoContrastParameters parameters, PerformanceMetrics metrics) {
         WritableRaster[] rasterImages = new WritableRaster[dataBuffers.size()];
 
         for (int idx = 0; idx < rasterImages.length; idx++) {
-            rasterImages[idx] = asWritableRaster(dataBuffers.get(idx), width, height, parameters);
+            rasterImages[idx] = asWritableRaster(dataBuffers.get(idx), width, height, parameters, metrics);
         }
 
         return rasterImages;
     }
 
-    private static WritableRaster asWritableRaster(DataBuffer buffer, int width, int height, AutoContrastParameters parameters) {
+    private static WritableRaster asWritableRaster(DataBuffer buffer, int width, int height, AutoContrastParameters parameters, PerformanceMetrics metrics) {
         if (parameters != null) {
+            Instant start = Instant.now();
+
             AutoContrast.apply(buffer, parameters);
+
+            if (metrics != null) {
+                metrics.autoConstrastDuration = metrics.autoConstrastDuration.plus(Duration.between(start, Instant.now()));
+            }
         }
 
-        return Raster.createInterleavedRaster(buffer, width, height, width, 1, new int[]{0}, new Point(0, 0));
+        Instant start = Instant.now();
+
+        WritableRaster raster = Raster.createInterleavedRaster(buffer, width, height, width, 1, new int[]{0}, new Point(0, 0));
+
+        if (metrics != null) {
+            metrics.rasterizeDuration = metrics.rasterizeDuration.plus(Duration.between(start, Instant.now()));
+        }
+
+        return raster;
     }
 
     private static DataBufferUShort fromSignedShort(short[] data, int length, int offset) {

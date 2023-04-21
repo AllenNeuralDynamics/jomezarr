@@ -3,7 +3,6 @@ package org.aind.omezarr;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aind.omezarr.util.InputStreamUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;

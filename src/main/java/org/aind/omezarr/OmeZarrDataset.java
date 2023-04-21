@@ -2,7 +2,6 @@ package org.aind.omezarr;
 
 import com.bc.zarr.DataType;
 import com.bc.zarr.ZarrArray;
-import com.bc.zarr.storage.Store;
 import org.aind.omezarr.zarr.ExternalZarrStore;
 import ucar.ma2.InvalidRangeException;
 
@@ -11,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class OmeZarrDataset {
@@ -178,6 +179,13 @@ public class OmeZarrDataset {
         return (short[]) array.read(shape, fromPosition);
     }
 
+    public byte[] readByte(int[] shape, int[] fromPosition) throws IOException, InvalidRangeException {
+        // This is primarily to mask the underlying use of JZarr versus any other implementation.
+        ZarrArray array = open();
+
+        return (byte[]) array.read(shape, fromPosition);
+    }
+
     /**
      * Reads an arbitrary chunk of the array.
      *
@@ -188,10 +196,92 @@ public class OmeZarrDataset {
      * @throws InvalidRangeException
      */
     public short[] readShort(int[] shape, int[] fromPosition) throws IOException, InvalidRangeException {
+
         // This is primarily to mask the underlying use of JZarr versus any other implementation.
         ZarrArray array = open();
 
         return (short[]) array.read(shape, fromPosition);
+    }
+
+    public short[] readShortAsParallel(int[] shape, int[] fromPosition, int numTasks) throws IOException {
+        class ReadEntry {
+            public int index;
+            public int[] shape;
+            public int[] offset;
+
+            public ReadEntry(int index, int[] shape, int[] offset) {
+                this.index = index;
+                this.shape = shape;
+                this.offset = offset;
+            }
+        }
+        List<ReadEntry> readEntries = new ArrayList<>();
+
+        readEntries.add(new ReadEntry(0, shape, fromPosition));
+
+        int zIndex = shape.length - 3;
+
+        if (shape.length > 2 && shape[2] > 1) {
+            for (int idx = 0; idx < shape.length - 2; idx++) {
+                if (shape[idx] != 1) {
+                    break;
+                }
+            }
+
+            readEntries.clear();
+
+            int interval = shape[zIndex] / numTasks;
+
+            int index = 0;
+
+            for (int intervalCount = fromPosition[zIndex]; intervalCount < shape[zIndex]; intervalCount += interval) {
+                int[] readOffset = new int[fromPosition.length];
+                System.arraycopy(fromPosition, 0, readOffset, 0, shape.length);
+                readOffset[zIndex] = intervalCount;
+
+                int[] readShape = new int[shape.length];
+                System.arraycopy(shape, 0, readShape, 0, shape.length);
+                readShape[zIndex] = Math.min(interval, shape[zIndex] - intervalCount);
+
+                readEntries.add(new ReadEntry(index, readShape, readOffset));
+
+                index++;
+            }
+        }
+
+        Map<ReadEntry, short[]> data = new ConcurrentHashMap<>();
+
+        int bufferSize = shape[shape.length - 1] * shape[shape.length - 2];
+
+        int size = bufferSize * shape[shape.length - 3];
+
+        short[] result = new short[size];
+
+        ZarrArray array = open();
+
+        readEntries.parallelStream().forEach(entry -> {
+            try {
+                data.put(entry, (short[]) array.read(entry.shape, entry.offset));
+            } catch (Exception ex) {
+                data.put(entry, null);
+            }
+        });
+
+        int offset = 0;
+
+        for (ReadEntry entry : readEntries) {
+            short[] buffer = data.get(entry);
+
+            if (buffer == null) {
+                throw new IOException();
+            }
+
+            System.arraycopy(buffer, 0, result, offset, buffer.length);
+
+            offset += buffer.length;
+        }
+
+        return result;
     }
 
     private ZarrArray open() throws IOException {
