@@ -6,7 +6,7 @@
 
     <groupId>org.aind</groupId>
     <artifactId>jomezarr</artifactId>
-    <version>1.2.7-SNAPSHOT</version>
+    <version>1.2.7</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -30,7 +30,7 @@
         <dependency>
             <groupId>com.bc.zarr</groupId>
             <artifactId>jzarr</artifactId>
-            <version>0.3.6-SNAPSHOT</version>
+            <version>0.3.7-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
