@@ -6,7 +6,7 @@
 
     <groupId>org.aind</groupId>
     <artifactId>jomezarr</artifactId>
-    <version>1.2.7</version>
+    <version>1.2.8</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

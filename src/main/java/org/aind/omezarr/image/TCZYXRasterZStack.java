@@ -96,6 +96,8 @@ public class TCZYXRasterZStack {
 
         Instant start = Instant.now();
 
+        boolean isUnsigned = dataset.getIsUnsigned();
+
         short[] data = numTasks > 1 ? dataset.readShortAsParallel(shape, offset, numTasks) : dataset.readShort(shape, offset);
 
         if (metrics != null) {
@@ -113,7 +115,7 @@ public class TCZYXRasterZStack {
 
             System.arraycopy(data, zIdx * zPlaneLength, subset, 0, zPlaneLength);
 
-            if (!dataset.getIsUnsigned()) {
+            if (!isUnsigned) {
                 dataBuffers.add(fromSignedShort(subset, subset.length, 0));
             } else {
                 dataBuffers.add(new DataBufferUShort(subset, subset.length, 0));
