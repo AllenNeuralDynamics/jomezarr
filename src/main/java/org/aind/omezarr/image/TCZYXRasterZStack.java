@@ -24,7 +24,7 @@ public class TCZYXRasterZStack {
             throw new IllegalArgumentException("shape");
         }
 
-        int[] fullSize = dataset.getShape();
+        int[] fullSize = dataset.getRawShape();
 
         int[] actualShape = new int[fullSize.length];
         int[] actualOffset = new int[fullSize.length];

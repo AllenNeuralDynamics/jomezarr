@@ -3,17 +3,11 @@ package org.aind.omezarr;
 import java.util.ArrayList;
 
 public class OmeZarrIndexGenerator {
-
     private boolean hasT = false;
     private boolean hasC = false;
     private boolean hasZ = false;
-    private boolean hasY = false;
-    private boolean hasX = false;
 
     public OmeZarrIndexGenerator(ArrayList<OmeZarrAxis> axes) {
-        hasX = true;
-        hasY = true;
-
         int spatialCount = 0;
 
         for (OmeZarrAxis axis: axes) {
@@ -33,6 +27,18 @@ public class OmeZarrIndexGenerator {
     }
 
     public OmeZarrIndex createIndex(int[] values) {
-        return null;
+        int t = hasT ? values[0] : -1;
+
+        int c = hasC ? (hasT ? values[1] : values[0]) : -1;
+
+        int offset = hasC ? (hasT ? 2 : 1) : 0;
+
+        int z = hasZ ? values[offset++] : -1;
+
+        int y = values[offset++];
+
+        int x = values[offset];
+
+        return new OmeZarrIndex(t, c, z, y, x);
     }
 }

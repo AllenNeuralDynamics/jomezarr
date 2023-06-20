@@ -25,7 +25,7 @@ public class OmeZarrImage {
     private DataBuffer dataBuffer;
 
     public OmeZarrImage(OmeZarrDataset dataset, int timeIndex, int channelIndex, int zIndex) throws IOException {
-        int[] shape = dataset.getShape();
+        int[] shape = dataset.getRawShape();
 
         int[] offset = new int[shape.length];
 

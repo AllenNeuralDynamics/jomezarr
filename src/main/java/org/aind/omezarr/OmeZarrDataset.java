@@ -25,6 +25,16 @@ public class OmeZarrDataset {
 
     private ExternalZarrStore externalZarrStore;
 
+    private OmeZarrIndexGenerator indexGenerator;
+
+    private OmeZarrIndex sizeIndex = null;
+
+    private OmeZarrIndex chunkSizeIndex = null;
+
+    private Boolean isValid = null;
+
+    private Boolean isUnsigned = null;
+
     public String getPath() {
         return path;
     }
@@ -71,6 +81,14 @@ public class OmeZarrDataset {
                 Double::sum);
     }
 
+    public OmeZarrIndexGenerator getIndexGenerator() {
+        return indexGenerator;
+    }
+
+    public void setIndexGenerator(OmeZarrIndexGenerator indexGenerator) {
+        this.indexGenerator = indexGenerator;
+    }
+
     public Path getParentPath() {
         return getMultiscale().getAttributes().getOmeZarrGroup().getRootPath();
     }
@@ -85,10 +103,40 @@ public class OmeZarrDataset {
         }
     }
 
-    public int[] getShape() throws IOException {
+    public OmeZarrIndex getShapeIndex() {
+        if (sizeIndex == null) {
+            try {
+                sizeIndex = indexGenerator.createIndex(getRawShape());
+            } catch (IOException ex) {
+                sizeIndex = OmeZarrIndex.InvalidIndex;
+            }
+        }
+
+        return sizeIndex;
+    }
+
+    public OmeZarrIndex getChunksIndex() {
+        if (chunkSizeIndex == null) {
+            try {
+                chunkSizeIndex = indexGenerator.createIndex(getRawChunks());
+            } catch (IOException ex) {
+                chunkSizeIndex = OmeZarrIndex.InvalidIndex;
+            }
+        }
+
+        return chunkSizeIndex;
+    }
+
+    public int[] getRawShape() throws IOException {
         ZarrArray array = open();
 
         return array.getShape();
+    }
+
+    public int[] getRawChunks() throws IOException {
+        ZarrArray array = open();
+
+        return array.getChunks();
     }
 
     public List<Double> getSpatialResolution(OmeZarrAxisUnit unitType) {
@@ -110,11 +158,15 @@ public class OmeZarrDataset {
     }
 
     public boolean getIsUnsigned() throws IOException {
-        ZarrArray array = open();
+        if (isUnsigned == null) {
+            ZarrArray array = open();
 
-        DataType datatype = array.getDataType();
+            DataType datatype = array.getDataType();
 
-        return datatype == DataType.u1 || datatype == DataType.u2 || datatype == DataType.u4;
+            isUnsigned = datatype == DataType.u1 || datatype == DataType.u2 || datatype == DataType.u4;
+        }
+
+        return isUnsigned;
     }
 
     public double getMinSpatialResolution() {
@@ -122,19 +174,23 @@ public class OmeZarrDataset {
     }
 
     public boolean isValid() {
-        try {
-            int[] shape = getShape();
+        if (isValid == null) {
+            try {
+                int[] shape = getRawShape();
 
-            return shape.length > 0;
-        } catch (IOException ex) {
-            return false;
+                isValid = shape.length > 0;
+            } catch (IOException ex) {
+                isValid = false;
+            }
         }
+
+        return isValid;
     }
 
     /**
      * Reads an entire 2-D array.
      *
-     * @return
+     * @return array of short values
      * @throws IOException
      * @throws InvalidRangeException
      */
@@ -157,9 +213,7 @@ public class OmeZarrDataset {
      * @param timeIndex    time slice
      * @param channelIndex channel slice
      * @param zIndex       z slice
-     * @return
-     * @throws IOException
-     * @throws InvalidRangeException
+     * @return array of short values
      */
     public short[] readShort(int timeIndex, int channelIndex, int zIndex) throws IOException, InvalidRangeException {
         ZarrArray array = open();
@@ -190,13 +244,9 @@ public class OmeZarrDataset {
      *
      * @param shape
      * @param fromPosition
-     * @return
-     * @throws IOException
-     * @throws InvalidRangeException
+     * @return array of short values
      */
     public short[] readShort(int[] shape, int[] fromPosition) throws IOException, InvalidRangeException {
-
-        // This is primarily to mask the underlying use of JZarr versus any other implementation.
         ZarrArray array = open();
 
         return (short[]) array.read(shape, fromPosition);
@@ -204,9 +254,9 @@ public class OmeZarrDataset {
 
     public short[] readShortAsParallel(int[] shape, int[] fromPosition, int numTasks) throws IOException {
         class ReadEntry {
-            public int index;
-            public int[] shape;
-            public int[] offset;
+            public final int index;
+            public final int[] shape;
+            public final int[] offset;
 
             public ReadEntry(int index, int[] shape, int[] offset) {
                 this.index = index;

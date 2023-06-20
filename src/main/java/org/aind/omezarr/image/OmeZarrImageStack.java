@@ -41,7 +41,7 @@ public class OmeZarrImageStack {
     }
 
     public WritableRaster[] asSlices(int time, int channel, int offset, int count, boolean autoContrast) throws IOException, InvalidRangeException {
-        int[] shape = dataset.getShape();
+        int[] shape = dataset.getRawShape();
 
         if (offset > shape[2]) {
             offset = shape[2] - 1;

@@ -23,6 +23,8 @@ public class OmeZarrMultiscale {
 
     private List<Integer> spatialIndices;
 
+    private OmeZarrIndexGenerator indexGenerator;
+
     public String getName() {
         return name;
     }
@@ -46,6 +48,8 @@ public class OmeZarrMultiscale {
     public void setAxes(ArrayList<OmeZarrAxis> axes) {
         this.axes = axes;
 
+        indexGenerator = new OmeZarrIndexGenerator(axes);
+
         spatialIndices = IntStream.range(0, axes.size())
                 .filter(i -> axes.get(i).getType() == OmeZarrAxisType.SPACE)
                 .mapToObj(i -> i)
@@ -61,6 +65,7 @@ public class OmeZarrMultiscale {
 
         for (OmeZarrDataset dataset : datasets) {
             dataset.setMultiscale(this);
+            dataset.setIndexGenerator(indexGenerator);
         }
     }
 

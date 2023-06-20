@@ -44,7 +44,7 @@ public class Main {
 
         AIND_SAMPLE_OUTPUT = Paths.get(System.getProperty("AindOutputDir"));
 
-        // readExample();
+        readExample();
 
         //readImageExample();
 
@@ -54,7 +54,7 @@ public class Main {
 
         // tczyxStackExample();
 
-        testCompressorPerf();
+        // testCompressorPerf();
     }
 
     private static void readExample() throws IOException, InvalidRangeException {
@@ -103,7 +103,7 @@ public class Main {
 
         OmeZarrDataset dataset = fileset.getAttributes().getMultiscales()[0].getDatasets().get(7);
 
-        int[] shape = dataset.getShape();
+        int[] shape = dataset.getRawShape();
 
         shape[0] = shape[1] = 1;
 
