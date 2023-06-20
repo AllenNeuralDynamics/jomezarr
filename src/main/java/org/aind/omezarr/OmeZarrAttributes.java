@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 public class OmeZarrAttributes {
 
-    private OmeZarrGroup fileset;
+    private OmeZarrGroup omeZarrGroup;
 
     private OmeZarrMultiscale[] multiscales;
 
@@ -37,12 +37,12 @@ public class OmeZarrAttributes {
         this.omero = omero;
     }
 
-    public OmeZarrGroup getFileset() {
-        return fileset;
+    public OmeZarrGroup getOmeZarrGroup() {
+        return omeZarrGroup;
     }
 
-    public void setFileset(OmeZarrGroup fileset) {
-        this.fileset = fileset;
+    public void setOmeZarrGroup(OmeZarrGroup omeZarrGroup) {
+        this.omeZarrGroup = omeZarrGroup;
     }
 
     public static OmeZarrAttributes fromInputStream(InputStream stream) throws IOException {

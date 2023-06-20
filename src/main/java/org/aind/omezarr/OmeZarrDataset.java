@@ -72,7 +72,7 @@ public class OmeZarrDataset {
     }
 
     public Path getParentPath() {
-        return getMultiscale().getAttributes().getFileset().getRootPath();
+        return getMultiscale().getAttributes().getOmeZarrGroup().getRootPath();
     }
 
     public Path getFullPath() {
@@ -180,7 +180,6 @@ public class OmeZarrDataset {
     }
 
     public byte[] readByte(int[] shape, int[] fromPosition) throws IOException, InvalidRangeException {
-        // This is primarily to mask the underlying use of JZarr versus any other implementation.
         ZarrArray array = open();
 
         return (byte[]) array.read(shape, fromPosition);

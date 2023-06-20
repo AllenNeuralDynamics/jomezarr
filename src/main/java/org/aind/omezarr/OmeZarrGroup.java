@@ -62,7 +62,7 @@ public class OmeZarrGroup {
         }
 
         if (attributes != null) {
-            attributes.setFileset(this);
+            attributes.setOmeZarrGroup(this);
         }
 
         return this;
