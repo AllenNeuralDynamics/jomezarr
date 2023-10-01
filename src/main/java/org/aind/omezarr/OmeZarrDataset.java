@@ -31,6 +31,8 @@ public class OmeZarrDataset {
 
     private OmeZarrIndex chunkSizeIndex = null;
 
+    private OmeZarrValue voxelSize = null;
+
     private Boolean isValid = null;
 
     private Boolean isUnsigned = null;
@@ -105,11 +107,7 @@ public class OmeZarrDataset {
 
     public OmeZarrIndex getShapeIndex() {
         if (sizeIndex == null) {
-            try {
-                sizeIndex = indexGenerator.createIndex(getRawShape());
-            } catch (IOException ex) {
-                sizeIndex = OmeZarrIndex.InvalidIndex;
-            }
+            sizeIndex = indexGenerator.createIndex(getRawShape());
         }
 
         return sizeIndex;
@@ -117,34 +115,122 @@ public class OmeZarrDataset {
 
     public OmeZarrIndex getChunksIndex() {
         if (chunkSizeIndex == null) {
-            try {
-                chunkSizeIndex = indexGenerator.createIndex(getRawChunks());
-            } catch (IOException ex) {
-                chunkSizeIndex = OmeZarrIndex.InvalidIndex;
-            }
+            chunkSizeIndex = indexGenerator.createIndex(getRawChunks());
         }
 
         return chunkSizeIndex;
     }
 
-    public int[] getRawShape() throws IOException {
-        ZarrArray array = open();
+    public int[] getRawShape() {
+        try {
+            ZarrArray array = open();
 
-        return array.getShape();
+            return array.getShape();
+        } catch (IOException e) {
+            return null;
+        }
     }
 
-    public int[] getRawChunks() throws IOException {
-        ZarrArray array = open();
+    public int[] getRawChunks() {
+        try {
+            ZarrArray array = open();
 
-        return array.getChunks();
+            return array.getChunks();
+        } catch (IOException e) {
+            return null;
+        }
     }
 
-    public List<Double> getSpatialResolution(OmeZarrAxisUnit unitType) {
-        if (unitType != OmeZarrAxisUnit.MICROMETER) {
-            throw new IllegalArgumentException();
+    public OmeZarrReadChunk readChunkForLocation(OmeZarrValue location) {
+        OmeZarrIndex chunksIndex = getChunksIndex();
+        OmeZarrValue voxelSize = getSpatialResolution(OmeZarrAxisUnit.MICROMETER);
+
+        OmeZarrIndex shapeIndex = getShapeIndex();
+
+        int x = (int) Math.floor(location.getX() / voxelSize.getX() / chunksIndex.getX()) * chunksIndex.getX();
+        int y = (int) Math.floor(location.getY() / voxelSize.getY() / chunksIndex.getY()) * chunksIndex.getY();
+        int z = (int) Math.floor(location.getZ() / voxelSize.getZ() / chunksIndex.getZ()) * chunksIndex.getZ();
+
+        if (x < 0 || y < 0 || z < 0) {
+            return null;
         }
 
-        return multiscale.getSpatialIndices().stream().map(idx -> {
+        if (x > shapeIndex.getX() || y > shapeIndex.getY() || z > shapeIndex.getZ()) {
+            return null;
+        }
+
+        int length = chunksIndex.get().length;
+
+        int[] shape = new int[length];
+        int[] offset = new int[length];
+
+        int nextIndex = 0;
+
+        if (chunksIndex.getT() != OmeZarrValue.InvalidPosition) {
+            shape[nextIndex] = 1;
+            offset[nextIndex] = (int) location.getT();
+            nextIndex++;
+        }
+
+        if (chunksIndex.getC() != OmeZarrValue.InvalidPosition) {
+            shape[nextIndex] = 1;
+            offset[nextIndex] = (int) location.getC();
+            nextIndex++;
+        }
+
+        if (chunksIndex.getZ() != OmeZarrValue.InvalidPosition) {
+            offset[nextIndex] = z;
+            shape[nextIndex] = Math.min(chunksIndex.getZ(), shapeIndex.getZ() - z);
+            if (shape[nextIndex] == 0) {
+                return null;
+            }
+            nextIndex++;
+        }
+
+        offset[nextIndex] = y;
+        shape[nextIndex] = Math.min(chunksIndex.getY(), shapeIndex.getY() - y);
+        if (shape[nextIndex] == 0) {
+            return null;
+        }
+        nextIndex++;
+
+        offset[nextIndex] = x;
+        shape[nextIndex] = Math.min(chunksIndex.getX(), shapeIndex.getX() - x);
+        if (shape[nextIndex] == 0) {
+            return null;
+        }
+
+        return new OmeZarrReadChunk(shape, offset);
+    }
+
+    public OmeZarrPoint getSpatialBounds(OmeZarrAxisUnit unitType) {
+        OmeZarrValue voxelSize = getSpatialResolution(unitType);
+
+        OmeZarrIndex shape = getShapeIndex();
+
+        if (voxelSize.getZ() != OmeZarrValue.InvalidPosition && shape.getZ() != OmeZarrIndex.InvalidPosition) {
+            return new OmeZarrPoint(shape.getX() * voxelSize.getX(), shape.getY() * voxelSize.getY(), shape.getZ() * voxelSize.getZ());
+        } else {
+            return new OmeZarrPoint(shape.getX() * voxelSize.getX(), shape.getY() * voxelSize.getY(), 0.0);
+        }
+    }
+
+    /**
+     * Returns the spatial resolution with any scale transform applied in z, y, x order
+     *
+     * @param unitType
+     * @return
+     */
+    public OmeZarrValue getSpatialResolution(OmeZarrAxisUnit unitType) {
+        if (unitType != OmeZarrAxisUnit.MICROMETER) {
+            throw new IllegalArgumentException("Micrometer is the only supported unit");
+        }
+
+        if (voxelSize != null) {
+            return voxelSize;
+        }
+
+        List<Double> values = multiscale.getSpatialIndices().stream().map(idx -> {
             double scale = 1.0;
 
             for (OmeZarrCoordinateTransformation transform : coordinateTransformations) {
@@ -155,6 +241,16 @@ public class OmeZarrDataset {
 
             return scale;
         }).collect(Collectors.toList());
+
+        if (values.size() < 2) {
+            voxelSize = OmeZarrValue.InvalidValue;
+        } else if (values.size() < 3) {
+            voxelSize = new OmeZarrValue(values.get(0), values.get(1));
+        } else {
+            voxelSize = new OmeZarrValue(values.get(0), values.get(1), values.get(2));
+        }
+
+        return voxelSize;
     }
 
     public boolean getIsUnsigned() throws IOException {
@@ -175,13 +271,9 @@ public class OmeZarrDataset {
 
     public boolean isValid() {
         if (isValid == null) {
-            try {
-                int[] shape = getRawShape();
+            int[] shape = getRawShape();
 
-                isValid = shape.length > 0;
-            } catch (IOException ex) {
-                isValid = false;
-            }
+            isValid = shape.length > 0;
         }
 
         return isValid;

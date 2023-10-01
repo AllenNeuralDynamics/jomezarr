@@ -1,6 +1,8 @@
 package org.aind.omezarr.image;
 
 import org.aind.omezarr.OmeZarrDataset;
+import org.aind.omezarr.OmeZarrReadChunk;
+import org.aind.omezarr.OmeZarrValue;
 import org.aind.omezarr.util.PerformanceMetrics;
 import ucar.ma2.InvalidRangeException;
 
@@ -47,6 +49,17 @@ public class TCZYXRasterZStack {
         }
 
         return AutoContrastParameters.fromBuffer(buffer);
+    }
+
+    public static WritableRaster[] forLocation(OmeZarrDataset dataset, OmeZarrValue location, AutoContrastParameters parameters) {
+        try {
+            OmeZarrReadChunk chunk = dataset.readChunkForLocation(location);
+
+            return fromDataset(dataset, chunk.getShape(), chunk.getOffset(), 1, parameters != null, parameters, null);
+        } catch (Exception ignored) {
+        }
+
+        return null;
     }
 
     public static WritableRaster[] fromDataset(OmeZarrDataset dataset, int[] shape, int[] offset, AutoContrastParameters parameters) {

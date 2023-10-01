@@ -44,9 +44,9 @@ public class Main {
 
         AIND_SAMPLE_OUTPUT = Paths.get(System.getProperty("AindOutputDir"));
 
-        readExample();
+        // readExample();
 
-        //readImageExample();
+        // readImageExample();
 
         // writeExample();
 
@@ -55,6 +55,8 @@ public class Main {
         // tczyxStackExample();
 
         // testCompressorPerf();
+
+        testChunkForLocation();
     }
 
     private static void readExample() throws IOException, InvalidRangeException {
@@ -206,5 +208,15 @@ public class Main {
         Duration duration = Duration.between(start, Instant.now());
 
         System.out.println(duration.toString());
+    }
+
+    private static void testChunkForLocation() throws IOException {
+        Path path = AIND_SAMPLE_DATASET;
+
+        OmeZarrGroup fileset = OmeZarrGroup.open(path);
+
+        OmeZarrDataset dataset = fileset.getAttributes().getMultiscales()[0].getDatasets().get(6);
+
+        OmeZarrReadChunk chunk = dataset.readChunkForLocation(new OmeZarrValue(0, 0, 274.8593, 57.87916, 236.3077));
     }
 }

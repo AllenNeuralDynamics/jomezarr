@@ -4,7 +4,9 @@ import java.util.ArrayList;
 
 public class OmeZarrIndex {
 
-    public static OmeZarrIndex InvalidIndex = new OmeZarrIndex(-1, -1, -1, -1, -1);
+    public static final int InvalidPosition = -1;
+
+    public static final OmeZarrIndex InvalidIndex = new OmeZarrIndex(InvalidPosition, InvalidPosition, InvalidPosition, InvalidPosition, InvalidPosition);
 
     private final int t;
 
@@ -19,7 +21,11 @@ public class OmeZarrIndex {
     private final int[] array;
 
     public OmeZarrIndex(int y, int x) {
-        this(-1, -1, -1, y, x);
+        this(InvalidPosition, InvalidPosition, InvalidPosition, y, x);
+    }
+
+    public OmeZarrIndex(int z, int y, int x) {
+        this(InvalidPosition, InvalidPosition, z, y, x);
     }
 
     public OmeZarrIndex(int t, int c, int z, int y, int x) {
@@ -31,23 +37,23 @@ public class OmeZarrIndex {
 
         ArrayList<Integer> values = new ArrayList<>();
 
-        if (t >= 0) {
+        if (t > InvalidPosition) {
             values.add(t);
         }
 
-        if (c >= 0) {
+        if (c > InvalidPosition) {
             values.add(c);
         }
 
-        if (z >= 0) {
+        if (z > InvalidPosition) {
             values.add(z);
         }
 
-        if (y >= 0) {
+        if (y > InvalidPosition) {
             values.add(y);
         }
 
-        if (x >= 0) {
+        if (x > InvalidPosition) {
             values.add(x);
         }
 
