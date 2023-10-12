@@ -33,6 +33,10 @@ public class OmeZarrDataset {
 
     private OmeZarrValue voxelSize = null;
 
+    private OmeZarrPoint origin = null;
+
+    private OmeZarrPoint extents = null;
+
     private Boolean isValid = null;
 
     private Boolean isUnsigned = null;
@@ -141,6 +145,75 @@ public class OmeZarrDataset {
         }
     }
 
+    public OmeZarrPoint getSpatialOrigin(OmeZarrAxisUnit unitType) {
+        if (origin != null) {
+            return origin;
+        }
+
+        if (unitType != OmeZarrAxisUnit.MICROMETER) {
+            throw new IllegalArgumentException("Micrometer is the only supported unit");
+        }
+
+        // TODO apply any translation in .zattrs
+        origin = new OmeZarrPoint(0, 0, 0);
+
+        return origin;
+    }
+
+    public OmeZarrPoint getSpatialExtents(OmeZarrAxisUnit unitType) {
+        if (extents != null) {
+            return extents;
+        }
+        OmeZarrValue voxelSize = getSpatialResolution(unitType);
+
+        OmeZarrIndex shape = getShapeIndex();
+
+        if (voxelSize.getZ() != OmeZarrValue.InvalidPosition && shape.getZ() != OmeZarrIndex.InvalidPosition) {
+            extents = new OmeZarrPoint(shape.getX() * voxelSize.getX(), shape.getY() * voxelSize.getY(), shape.getZ() * voxelSize.getZ());
+        } else {
+            extents = new OmeZarrPoint(shape.getX() * voxelSize.getX(), shape.getY() * voxelSize.getY(), 0.0);
+        }
+        return extents;
+    }
+
+    /**
+     * Returns the spatial resolution with any scale transform applied in z, y, x order
+     *
+     * @param unitType
+     * @return
+     */
+    public OmeZarrValue getSpatialResolution(OmeZarrAxisUnit unitType) {
+        if (unitType != OmeZarrAxisUnit.MICROMETER) {
+            throw new IllegalArgumentException("Micrometer is the only supported unit");
+        }
+
+        if (voxelSize != null) {
+            return voxelSize;
+        }
+
+        List<Double> values = multiscale.getSpatialIndices().stream().map(idx -> {
+            double scale = 1.0;
+
+            for (OmeZarrCoordinateTransformation transform : coordinateTransformations) {
+                if (transform.getType() == OmeZarrCoordinateTransformationType.SCALE) {
+                    scale *= transform.getScale()[idx];
+                }
+            }
+
+            return scale;
+        }).collect(Collectors.toList());
+
+        if (values.size() < 2) {
+            voxelSize = OmeZarrValue.InvalidValue;
+        } else if (values.size() < 3) {
+            voxelSize = new OmeZarrValue(values.get(0), values.get(1));
+        } else {
+            voxelSize = new OmeZarrValue(values.get(0), values.get(1), values.get(2));
+        }
+
+        return voxelSize;
+    }
+
     public OmeZarrReadChunk readChunkForLocation(OmeZarrValue location) {
         OmeZarrIndex chunksIndex = getChunksIndex();
         OmeZarrValue voxelSize = getSpatialResolution(OmeZarrAxisUnit.MICROMETER);
@@ -201,56 +274,6 @@ public class OmeZarrDataset {
         }
 
         return new OmeZarrReadChunk(shape, offset);
-    }
-
-    public OmeZarrPoint getSpatialBounds(OmeZarrAxisUnit unitType) {
-        OmeZarrValue voxelSize = getSpatialResolution(unitType);
-
-        OmeZarrIndex shape = getShapeIndex();
-
-        if (voxelSize.getZ() != OmeZarrValue.InvalidPosition && shape.getZ() != OmeZarrIndex.InvalidPosition) {
-            return new OmeZarrPoint(shape.getX() * voxelSize.getX(), shape.getY() * voxelSize.getY(), shape.getZ() * voxelSize.getZ());
-        } else {
-            return new OmeZarrPoint(shape.getX() * voxelSize.getX(), shape.getY() * voxelSize.getY(), 0.0);
-        }
-    }
-
-    /**
-     * Returns the spatial resolution with any scale transform applied in z, y, x order
-     *
-     * @param unitType
-     * @return
-     */
-    public OmeZarrValue getSpatialResolution(OmeZarrAxisUnit unitType) {
-        if (unitType != OmeZarrAxisUnit.MICROMETER) {
-            throw new IllegalArgumentException("Micrometer is the only supported unit");
-        }
-
-        if (voxelSize != null) {
-            return voxelSize;
-        }
-
-        List<Double> values = multiscale.getSpatialIndices().stream().map(idx -> {
-            double scale = 1.0;
-
-            for (OmeZarrCoordinateTransformation transform : coordinateTransformations) {
-                if (transform.getType() == OmeZarrCoordinateTransformationType.SCALE) {
-                    scale *= transform.getScale()[idx];
-                }
-            }
-
-            return scale;
-        }).collect(Collectors.toList());
-
-        if (values.size() < 2) {
-            voxelSize = OmeZarrValue.InvalidValue;
-        } else if (values.size() < 3) {
-            voxelSize = new OmeZarrValue(values.get(0), values.get(1));
-        } else {
-            voxelSize = new OmeZarrValue(values.get(0), values.get(1), values.get(2));
-        }
-
-        return voxelSize;
     }
 
     public boolean getIsUnsigned() throws IOException {
